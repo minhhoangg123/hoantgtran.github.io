@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="hi.css">
+    <title>Nasa</title>
+</head>
+<body>
+    
+    <div class="dateForm">
+        <link href='https://fonts.googleapis.com/css?family=Lato:300,400,700' rel='stylesheet' type='text/css'>
+    <div id='stars'></div>
+    <div id='stars2'></div>
+    <div id='stars3'></div>
+    <div id='title'>
+        Outer space on this day
+        <br>
+        From:(MM-dd-yyyy)
+        <input id="fromDate" type="date" onChange="dateChange();">
+        
+        To:(MM-dd-yyyy)
+        <input id="toDate" type="date" onChange="dateChange();">
+        
+        <br>
+
+
+        <div class="button" id="button-3">
+            <div id="circle"></div>
+            <a href="#dropdownList" onclick="getdate();">Get</a>
+            
+          </div>
+        
+        <br>
+        
+        <select id="dropdownList" onChange="update();">
+            <option value="-1" disabled>Please select...</option>
+        </select>
+
+
+        <br>
+        <div id="outputError"></div>
+        <div id="outputName"></div>
+        <img id="outputImage"></img>
+        <iframe id="outputVideo" frameborder="0" width="560" height="315" allowfullscreen></iframe>
+        <div id="outputExplanation" class="text"></div>
+        <div id="outputCopyright"></div>
+    </div>
+
+    <script>
+        var nasaData = {};
+        var nasaArray = [];
+        var date = false;
+
+        function dateChange()
+        {
+            date = true;
+        }
+
+        function getdate()
+        {
+            if (validation())
+            {
+                if (date == true)
+                {
+                    var startDate = document.getElementById("fromDate").value;
+                    var endDate = document.getElementById("toDate").value;
+                    ajaxCall(startDate, endDate);
+                }
+            }
+        }
+
+        function ajaxCall(startDate, endDate) {
+            
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function()
+            {
+                if (request.readyState === 4 && request.status === 200)
+                {
+                    nasaArray = JSON.parse(request.responseText);
+                    dropdownList();
+                    date = false;
+                }
+                else if (request.readyState === 4 && request.status === 500)
+                {
+                    document.getElementById("outputError").innerHTML = "Sever error. Please try again!";
+                    date = false;
+                }
+
+            }
+
+            request.open("GET", "https://api.nasa.gov/planetary/apod?api_key=RzSKcBd7weOoqQIenyr3dHqOppyZY91kIN0ylc3P" + "&start_date=" + startDate + "&end_date=" + endDate);
+            request.send();
+            
+        }
+
+        function dropdownList()
+        {
+            document.getElementById("dropdownList").innerHTML = "<option value='-1' disabled selected>Please select...</option>";
+
+            for (var i = 0; i < nasaArray.length; i++)
+            {
+                var element = document.createElement("option");
+                element.innerText = nasaArray[i].title;
+                document.getElementById("dropdownList").appendChild(element);
+            }
+        }
+
+        function update() {
+            var x = document.getElementById("dropdownList").selectedIndex;
+
+            document.getElementById("outputName").innerHTML = "";
+            document.getElementById("outputImage").src = "";
+            document.getElementById("outputVideo").src = "";
+            document.getElementById("outputExplanation").innerHTML = "";
+            document.getElementById("outputCopyright").innerHTML = "";
+
+
+            document.getElementById("outputName").innerHTML = nasaArray[x - 1].title;
+            if (nasaArray[x - 1].media_type == "image")
+            {
+                document.getElementById("outputImage").src = nasaArray[x - 1].url;
+            }
+            else
+            {
+                document.getElementById("outputVideo").src = nasaArray[x - 1].url;
+            }
+            document.getElementById("outputExplanation").innerHTML = nasaArray[x - 1].explanation;
+            document.getElementById("outputCopyright").innerHTML =  nasaArray[x - 1].copyright;
+
+            if (nasaArray[x - 1].title === null)
+            {
+                document.getElementById("outputName").innerHTML = "Unknown";
+            }
+            if (nasaArray[x - 1].hdurl === null)
+            {
+                document.getElementById("outputImage").src = "Unknown";
+            }
+            if (nasaArray[x - 1].title === null)
+            {
+                document.getElementById("outputExplanation").innerHTML = "Unknown";
+            }
+            if (nasaArray[x - 1].copyright == null)
+            {
+                document.getElementById("outputCopyright").innerHTML = "Unknown";
+            }
+        }
+
+        function validation() {
+            var startDate = document.getElementById("fromDate").value;
+            var endDate = document.getElementById("toDate").value;
+
+            var startDateCheck = new Date(startDate);
+            var endDateCheck = new Date(endDate);
+            var today = new Date();
+            
+            var dateStartDate = startDateCheck.getUTCDate();
+            var monthStartDate = startDateCheck.getUTCMonth() + 1;
+            var yearStartDate = startDateCheck.getUTCFullYear();
+
+            var dateEndDate = endDateCheck.getUTCDate();
+            var monthEndDate = endDateCheck.getUTCMonth() + 1;
+            var yearEndDate = endDateCheck.getUTCFullYear();
+
+            var dateNow = today.getUTCDate();
+            var monthNow = today.getUTCMonth() + 1;
+            var yearNow = today.getUTCFullYear();
+
+            var diffDateStart = startDateCheck.getTime();
+            var diffDateEnd = endDateCheck.getTime();
+            var diffDate = diffDateEnd - diffDateStart;
+            diffDate = diffDate / (1000 * 60 * 60 * 24);
+
+            var errorOutput = document.getElementById("outputError");
+            errorOutput.innerHTML = "";
+            if (diffDate > 30)
+            {
+                errorOutput.innerHTML = "Please choose the range within 1 month!";
+                return false;
+            }
+            else if (yearStartDate > yearEndDate || (yearStartDate == yearEndDate && monthStartDate > monthEndDate) || (yearStartDate == yearEndDate && monthStartDate == monthEndDate && dateStartDate > dateEndDate))
+            {
+                errorOutput.innerHTML = "Start date must be smaller than end date! Please try again!";
+                return false;
+            }
+            else if (yearStartDate == 1995 && monthStartDate == 6 && dateStartDate == 16 && yearEndDate == 1995 && monthEndDate == 6 && dateEndDate == 16)
+            {
+                return true;
+            }
+            else if (yearStartDate < 1995 || (yearStartDate == 1995 && monthStartDate < 6) || (yearStartDate == 1995 && monthStartDate == 6 && dateStartDate < 20))
+            {
+                errorOutput.innerHTML = "You can only see 16th June 1995 and from 20th June 1995 forward!";
+                return false;
+            }
+            
+            else if (yearEndDate > yearNow || (yearEndDate == yearNow && monthEndDate > monthNow) || (yearEndDate == yearNow && monthEndDate == monthNow && dateEndDate > dateNow))
+            {
+                errorOutput.innerHTML = "You can not see the day in future. Please try again!";
+                return false;
+            }
+
+            return true;
+        }
+        
+    </script>
+</body>
+</html>
